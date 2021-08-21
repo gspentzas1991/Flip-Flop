@@ -2,13 +2,23 @@ using Assets.Scripts;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
     public Tile[,] puzzle;
     [SerializeField] private TileGenerator tileGenerator;
+    [SerializeField] private Text scoreText;
+    [SerializeField] private Image powerMeterImage;
     private Tile cursorTile;
+    /// <summary>
+    /// How much the score and power meter should increase after destroying a tile
+    /// </summary>
+    private float tileBreakValue=5f;
+    private float score;
+    private float powerMeter = 0f;
+    private float maxPowerMeter = 100f;
 
     //might need refactoring
     private float rotationDirection;
@@ -56,7 +66,15 @@ public class GameManager : MonoBehaviour
             {
                 return;
             }
-            if (Input.GetKeyDown(KeyCode.W))
+            //PowerMove input
+            if (Input.GetKeyDown(KeyCode.Space)) 
+            {
+                if (powerMeter == maxPowerMeter)
+                {
+                    UseBombPower();
+                }
+            }
+            else if (Input.GetKeyDown(KeyCode.W))
             {
                 var targetTilePosition = DirectionCalculator.Calculate(cursorTile.position, Direction.Up, puzzleRotation.z);
                 //if the movement would 
@@ -135,9 +153,6 @@ public class GameManager : MonoBehaviour
         cursorTile.position = targetTile.position;
         targetTile.position = cursorTileStartingPuzzlePosition;
         //moves the tile gameobject
-        //var cursorStartingPosition = cursorTile.transform.position;
-        //cursorTile.transform.position = targetTile.transform.position;
-        //targetTile.transform.position = cursorStartingPosition;
         movingTiles.Add(cursorTile);
         movingTiles.Add(targetTile);
         StartCoroutine(cursorTile.MoveGameObject(targetTile.transform.position));
@@ -191,11 +206,10 @@ public class GameManager : MonoBehaviour
         {
             if (tile.isMatched)
             {
-                puzzle[tile.position.x, tile.position.y] = tileGenerator.GenerateRandomTile(tile.position, true);
-                puzzle[tile.position.x, tile.position.y].transform.position = tile.transform.position;
-                puzzle[tile.position.x, tile.position.y].transform.rotation = tile.transform.rotation;
-                Destroy(tile.gameObject);
+                ReplaceTile(tile);
                 generatedNewTiles = true;
+                IncreaseScore(tileBreakValue);
+                IncreasePowerMeter(tileBreakValue);
             }
         }
         //if new tiles where generated, then search again for matches
@@ -203,5 +217,68 @@ public class GameManager : MonoBehaviour
         {
             SearchTilesForMatches();
         }
+    }
+
+    /// <summary>
+    /// Increases the score fo
+    /// </summary>
+    private void IncreaseScore(float increaseValue)
+    {
+        score += increaseValue;
+        scoreText.text = $"Score : {score}";
+        UpdatePowerMeter();
+    }
+
+    private void IncreasePowerMeter(float increaseValue)
+    {
+        powerMeter += increaseValue;
+        if (powerMeter > maxPowerMeter)
+        {
+            powerMeter = maxPowerMeter;
+        }
+    }
+
+    /// <summary>
+    /// Uses the bomb power, which destroys 5 tiles
+    /// </summary>
+    private void UseBombPower()
+    {
+        powerMeter = 0f;
+        UpdatePowerMeter();
+        List<Tile> tilesToBeBombed = new List<Tile>();
+        while (tilesToBeBombed.Count < 5)
+        {
+            var tile = puzzle[Random.Range(0, puzzle.GetLength(1)), Random.Range(0, puzzle.GetLength(0))];
+            if (tilesToBeBombed.Contains(tile) || tile == cursorTile)
+            {
+                continue;
+            }
+            tilesToBeBombed.Add(tile);
+        }
+        foreach (var tile in tilesToBeBombed) 
+        {
+            ReplaceTile(tile);
+            IncreaseScore(tileBreakValue);
+        }
+        SearchTilesForMatches();
+    }
+
+    /// <summary>
+    /// Destroys tile and creates a new one in its place
+    /// </summary>
+    private void ReplaceTile(Tile tile)
+    {
+        puzzle[tile.position.x, tile.position.y] = tileGenerator.GenerateRandomTile(tile.position, true);
+        puzzle[tile.position.x, tile.position.y].transform.position = tile.transform.position;
+        puzzle[tile.position.x, tile.position.y].transform.rotation = tile.transform.rotation;
+        Destroy(tile.gameObject);
+    }
+
+    /// <summary>
+    /// Updates the power meter UI
+    /// </summary>
+    private void UpdatePowerMeter()
+    {
+        powerMeterImage.fillAmount = powerMeter / 100;
     }
 }
