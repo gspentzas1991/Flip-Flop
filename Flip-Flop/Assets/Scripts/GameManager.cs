@@ -8,7 +8,6 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance;
     public Tile[,] puzzle;
     [SerializeField] private TileGenerator tileGenerator;
-    private bool searchForMatches;
     private Tile cursorTile;
 
     //might need refactoring
@@ -17,13 +16,15 @@ public class GameManager : MonoBehaviour
     private Quaternion targetRotation;
     private float rotationSpeed = 1f;
 
+    //need refactoring
+    public bool tilesAreMoving;
+    private List<Tile> movingTiles = new List<Tile>();
+
     void Start()
     {
         InitializeSingleton();
         puzzle = tileGenerator.GeneratePuzzle();
         cursorTile = tileGenerator.GenerateCursorTile();
-
-        searchForMatches = true;
     }
 
     /// <summary>
@@ -47,21 +48,17 @@ public class GameManager : MonoBehaviour
         //Gets the rotation of the puzzle
         var puzzleRotation = tileGenerator.transform.rotation.eulerAngles;
         puzzleRotation.z = Mathf.Round(tileGenerator.transform.rotation.eulerAngles.z);
-        //Goes through the puzzleTiles, marking any matched tiles as isMatched
-        if (searchForMatches)
-        {
-            foreach (var tile in puzzle)
-            {
-                tile.FindMatch();
-            }
-            searchForMatches = false;
-        }
         //If we're not rotating, we're expecting an input
         if (!isRotating)
         {
+            //we don't allow input if tiles are moving
+            if (tilesAreMoving)
+            {
+                return;
+            }
             if (Input.GetKeyDown(KeyCode.W))
             {
-                var targetTilePosition = DirectionCalculator.Calculate(cursorTile.tilePosition, Direction.Up, puzzleRotation.z);
+                var targetTilePosition = DirectionCalculator.Calculate(cursorTile.position, Direction.Up, puzzleRotation.z);
                 //if the movement would 
                 if (!IsPositionWithinPuzzle(targetTilePosition))
                 {
@@ -72,7 +69,7 @@ public class GameManager : MonoBehaviour
             }
             else if (Input.GetKeyDown(KeyCode.S))
             {
-                var targetTilePosition = DirectionCalculator.Calculate(cursorTile.tilePosition, Direction.Down, puzzleRotation.z);
+                var targetTilePosition = DirectionCalculator.Calculate(cursorTile.position, Direction.Down, puzzleRotation.z);
                 if (!IsPositionWithinPuzzle(targetTilePosition))
                 {
                     return;
@@ -105,11 +102,12 @@ public class GameManager : MonoBehaviour
                 isRotating = false;
                 tileGenerator.transform.rotation = Quaternion.Euler(puzzleRotation);
 
-                var targetTilePosition = DirectionCalculator.Calculate(cursorTile.tilePosition, Direction.Down, puzzleRotation.z);
+                var targetTilePosition = DirectionCalculator.Calculate(cursorTile.position, Direction.Up, puzzleRotation.z);
                 if (!IsPositionWithinPuzzle(targetTilePosition))
                 {
                     return;
                 }
+                Debug.Log($"MoveCursor called with target {puzzle[targetTilePosition.x, targetTilePosition.y].name} and position {targetTilePosition}");
                 MoveCursor(puzzle[targetTilePosition.x,targetTilePosition.y]);
             }
             else
@@ -126,15 +124,22 @@ public class GameManager : MonoBehaviour
     /// </summary>
     private void MoveCursor(Tile targetTile)
     {
-        var cursorStartingPosition = cursorTile.transform.position;
-        cursorTile.transform.position = targetTile.transform.position;
-        targetTile.transform.position = cursorStartingPosition;
-        puzzle[cursorTile.tilePosition.x, cursorTile.tilePosition.y] = targetTile;
-        puzzle[targetTile.tilePosition.x, targetTile.tilePosition.y] = cursorTile;
-        var cursorTileStartingPuzzlePosition = cursorTile.tilePosition;
-        cursorTile.tilePosition = targetTile.tilePosition;
-        targetTile.tilePosition = cursorTileStartingPuzzlePosition;
-        searchForMatches = true;
+        tilesAreMoving = true;
+        //swap the tiles in the puzzle
+        puzzle[cursorTile.position.x, cursorTile.position.y] = targetTile;
+        puzzle[targetTile.position.x, targetTile.position.y] = cursorTile;
+        //update the tile position
+        var cursorTileStartingPuzzlePosition = cursorTile.position;
+        cursorTile.position = targetTile.position;
+        targetTile.position = cursorTileStartingPuzzlePosition;
+        //moves the tile gameobject
+        //var cursorStartingPosition = cursorTile.transform.position;
+        //cursorTile.transform.position = targetTile.transform.position;
+        //targetTile.transform.position = cursorStartingPosition;
+        movingTiles.Add(cursorTile);
+        movingTiles.Add(targetTile);
+        StartCoroutine(cursorTile.MoveGameObject(targetTile.transform.position));
+        StartCoroutine(targetTile.MoveGameObject(cursorTile.transform.position));
     }
 
     /// <summary>
@@ -142,11 +147,52 @@ public class GameManager : MonoBehaviour
     /// </summary>
     private bool IsPositionWithinPuzzle(Vector2Int positionToCheck)
     {
-        Debug.Log(positionToCheck);
         if (positionToCheck.x < 0 || positionToCheck.y < 0 || positionToCheck.x >= puzzle.GetLength(1) || positionToCheck.y >= puzzle.GetLength(0))
         {
             return false;
         }
         return true;
+    }
+
+    /// <summary>
+    /// Removes the tile from the movingTiles list and generates a new one in its place, and if all tiles finished moving, updates the 
+    /// relevant flags
+    /// </summary>
+    public void TileFinishedMoving(Tile tile)
+    {
+        for (int i = 0; i < movingTiles.Count; i++)
+        {
+            if (movingTiles[i]==tile)
+            {
+                movingTiles.RemoveAt(i);
+            }
+        }
+        if (movingTiles.Count == 0)
+        {
+            tilesAreMoving = false;
+            SearchTilesForMatches();
+        }
+    }
+
+    /// <summary>
+    /// Iterates through the puzzle to find tile matches
+    /// </summary>
+    private void SearchTilesForMatches()
+    {
+        foreach (var tile in puzzle)
+        {
+            tile.FindMatch();
+        }
+        //Destroy all matched tiles and generate new tiles in their positions
+        foreach (var tile in puzzle)
+        {
+            if (tile.isMatched)
+            {
+                puzzle[tile.position.x, tile.position.y] = tileGenerator.GenerateRandomTile(tile.position, true);
+                puzzle[tile.position.x, tile.position.y].transform.position = tile.transform.position;
+                puzzle[tile.position.x, tile.position.y].transform.rotation = tile.transform.rotation;
+                Destroy(tile.gameObject);
+            }
+        }
     }
 }

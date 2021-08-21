@@ -44,7 +44,7 @@ public class TileGenerator : MonoBehaviour
         var randomY = Random.Range(0, puzzleHeight);
         Destroy(puzzle[randomX, randomY].gameObject);
         puzzle[randomX, randomY] = Instantiate(cursorPrefab, new Vector2(randomX * tilePadding, randomY * tilePadding), cursorPrefab.transform.rotation);
-        puzzle[randomX, randomY].tilePosition = new Vector2Int(randomX, randomY);
+        puzzle[randomX, randomY].position = new Vector2Int(randomX, randomY);
         puzzle[randomX, randomY].transform.parent = transform;
         return puzzle[randomX, randomY];
     }
@@ -52,7 +52,7 @@ public class TileGenerator : MonoBehaviour
     /// <summary>
     /// Generates a random tile at the defined position
     /// </summary>
-    private Tile GenerateRandomTile(Vector2Int tilePosition, bool allowMatches)
+    public Tile GenerateRandomTile(Vector2Int tilePosition, bool allowMatches)
     {
         var randomTile = availableTiles[Random.Range(0, availableTiles.Length)];
         //if we don't want to allow matches, we need to check the puzzle for matches with the new tile
@@ -68,7 +68,7 @@ public class TileGenerator : MonoBehaviour
         }
 
         var generatedTile = Instantiate(randomTile, new Vector2(tilePosition.x * tilePadding,tilePosition.y * tilePadding), randomTile.transform.rotation);
-        generatedTile.tilePosition = tilePosition;
+        generatedTile.position = tilePosition;
         generatedTile.transform.parent = transform;
         return generatedTile;
     }
