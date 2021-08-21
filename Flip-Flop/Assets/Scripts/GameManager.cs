@@ -121,14 +121,12 @@ public class GameManager : MonoBehaviour
                 tileGenerator.transform.rotation = targetRotation;
                 puzzleRotation = tileGenerator.transform.rotation.eulerAngles;
                 puzzleRotation.z = Mathf.Round(puzzleRotation.z);
-                Debug.Log(puzzleRotation.z);
-
-                var targetTilePosition = DirectionCalculator.Calculate(cursorTile.position, Direction.Up, puzzleRotation.z);
-                if (!IsPositionWithinPuzzle(targetTilePosition))
-                {
-                    return;
-                }
-                MoveCursor(puzzle[targetTilePosition.x,targetTilePosition.y]);
+                //var targetTilePosition = DirectionCalculator.Calculate(cursorTile.position, Direction.Up, puzzleRotation.z);
+                //if (!IsPositionWithinPuzzle(targetTilePosition))
+                //{
+                //    return;
+                //}
+                //MoveCursor(puzzle[targetTilePosition.x,targetTilePosition.y]);
             }
             else
             {
