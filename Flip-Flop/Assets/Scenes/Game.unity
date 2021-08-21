@@ -278,6 +278,7 @@ MonoBehaviour:
   powerMeterImage: {fileID: 662707275}
   QWorker: {fileID: 1414134116}
   EWorker: {fileID: 708274975}
+  tileExplosion: {fileID: 1280696388669252373, guid: dd3df7c913a270945a5503d7b8e5b9e3, type: 3}
   tilesAreMoving: 0
 --- !u!4 &406313274
 Transform:

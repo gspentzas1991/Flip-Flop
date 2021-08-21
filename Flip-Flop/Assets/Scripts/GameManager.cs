@@ -14,6 +14,7 @@ public class GameManager : MonoBehaviour
     //References to the workers Q and E
     [SerializeField] private Worker QWorker;
     [SerializeField] private Worker EWorker;
+    [SerializeField] private GameObject tileExplosion;
     private Tile cursorTile;
     /// <summary>
     /// How much the score and power meter should increase after destroying a tile
@@ -283,6 +284,7 @@ public class GameManager : MonoBehaviour
         puzzle[tile.position.x, tile.position.y].transform.position = tile.transform.position;
         puzzle[tile.position.x, tile.position.y].transform.rotation = tile.transform.rotation;
         Destroy(tile.gameObject);
+        Instantiate(tileExplosion, tile.transform.position, tileExplosion.transform.rotation);
     }
 
     /// <summary>

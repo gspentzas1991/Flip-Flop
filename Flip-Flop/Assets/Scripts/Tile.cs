@@ -16,7 +16,24 @@ public class Tile : MonoBehaviour
     public bool isMatched;
     private bool isMoving;
     private float tileMoveSpeed = 4f;
+    /// <summary>
+    /// The ammount of seconds to delay rendering the tile, in order for the tile explosion to finish
+    /// </summary>
+    private float renderDelay = 0.2f;
+    private SpriteRenderer spriteRenderer;
 
+    private void Start()
+    {
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        StartCoroutine(RenderAfterDelay());
+    }
+
+    private IEnumerator RenderAfterDelay()
+    {
+        spriteRenderer.enabled = false;
+        yield return new WaitForSeconds(renderDelay);
+        spriteRenderer.enabled = true;
+    }
 
     private void Update()
     {
