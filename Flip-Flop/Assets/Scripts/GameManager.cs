@@ -11,6 +11,9 @@ public class GameManager : MonoBehaviour
     [SerializeField] private TileGenerator tileGenerator;
     [SerializeField] private Text scoreText;
     [SerializeField] private Image powerMeterImage;
+    //References to the workers Q and E
+    [SerializeField] private Worker QWorker;
+    [SerializeField] private Worker EWorker;
     private Tile cursorTile;
     /// <summary>
     /// How much the score and power meter should increase after destroying a tile
@@ -98,12 +101,14 @@ public class GameManager : MonoBehaviour
             //Gets the rotation target based on input
             else if (Input.GetKeyDown(KeyCode.Q))
             {
+                QWorker.StartWorking();
                 rotationDirection = 90;
                 isRotating = true;
                 targetRotation = Quaternion.Euler(tileGenerator.transform.eulerAngles + new Vector3(0, 0, rotationDirection));
             }
             else if (Input.GetKeyDown(KeyCode.E))
             {
+                EWorker.StartWorking();
                 rotationDirection = -90;
                 isRotating = true;
                 targetRotation = Quaternion.Euler(tileGenerator.transform.eulerAngles + new Vector3(0, 0, rotationDirection));
@@ -118,6 +123,14 @@ public class GameManager : MonoBehaviour
             if (Mathf.Abs(angle) < 1)
             {
                 isRotating = false;
+                if (rotationDirection == 90)
+                {
+                    QWorker.StopWorking();
+                }
+                else if (rotationDirection == -90)
+                {
+                    EWorker.StopWorking();
+                }
                 tileGenerator.transform.rotation = targetRotation;
                 puzzleRotation = tileGenerator.transform.rotation.eulerAngles;
                 puzzleRotation.z = Mathf.Round(puzzleRotation.z);
