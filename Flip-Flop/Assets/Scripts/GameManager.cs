@@ -78,7 +78,7 @@ public class GameManager : MonoBehaviour
                 MoveCursor(targetTile);
             }
             //Gets the rotation target based on input
-            if (Input.GetKeyDown(KeyCode.Q))
+            else if (Input.GetKeyDown(KeyCode.Q))
             {
                 rotationDirection = 90;
                 isRotating = true;
@@ -97,17 +97,17 @@ public class GameManager : MonoBehaviour
             float angle = Quaternion.Angle(tileGenerator.transform.rotation, targetRotation);
 
             //Checks to see if the target rotation has been reached, and stops the rotation if so
-            if (Mathf.Abs(angle) < 1e-3f)
+            if (Mathf.Abs(angle) < 1)
             {
                 isRotating = false;
-                tileGenerator.transform.rotation = Quaternion.Euler(puzzleRotation);
+                tileGenerator.transform.rotation = targetRotation;
+                puzzleRotation = tileGenerator.transform.rotation.eulerAngles;
 
                 var targetTilePosition = DirectionCalculator.Calculate(cursorTile.position, Direction.Up, puzzleRotation.z);
                 if (!IsPositionWithinPuzzle(targetTilePosition))
                 {
                     return;
                 }
-                Debug.Log($"MoveCursor called with target {puzzle[targetTilePosition.x, targetTilePosition.y].name} and position {targetTilePosition}");
                 MoveCursor(puzzle[targetTilePosition.x,targetTilePosition.y]);
             }
             else
@@ -179,6 +179,7 @@ public class GameManager : MonoBehaviour
     /// </summary>
     private void SearchTilesForMatches()
     {
+        bool generatedNewTiles = false;
         foreach (var tile in puzzle)
         {
             tile.FindMatch();
@@ -192,7 +193,13 @@ public class GameManager : MonoBehaviour
                 puzzle[tile.position.x, tile.position.y].transform.position = tile.transform.position;
                 puzzle[tile.position.x, tile.position.y].transform.rotation = tile.transform.rotation;
                 Destroy(tile.gameObject);
+                generatedNewTiles = true;
             }
+        }
+        //if new tiles where generated, then search again for matches
+        if (generatedNewTiles)
+        {
+            SearchTilesForMatches();
         }
     }
 }
