@@ -8,6 +8,7 @@ namespace Assets.Scripts
 {
     public enum TileShape
     {
+        Cursor = 0,
         Diamond = 1,
         Pentagon = 2,
         Hexagon = 3,

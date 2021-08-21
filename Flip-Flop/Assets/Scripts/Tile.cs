@@ -15,15 +15,11 @@ public class Tile : MonoBehaviour
     /// </summary>
     public bool isMatched;
 
-    private void Update()
-    {
-        FindMatch();
-    }
 
     /// <summary>
     /// We try to find if the Tile is the central match of tile match
     /// </summary>
-    private void FindMatch()
+    public void FindMatch()
     {
         var puzzle = GameManager.Instance.puzzle;
         //For a tile match we need at least one match on the left, and one match on the right of the tile
@@ -42,8 +38,8 @@ public class Tile : MonoBehaviour
         //Vertical match check
         if (tilePosition.y > 0 && tilePosition.y < puzzle.GetLength(0)-1)
         {
-            var bottomTile = puzzle[tilePosition.y - 1, tilePosition.y];
-            var topTile = puzzle[tilePosition.y + 1, tilePosition.y];
+            var bottomTile = puzzle[tilePosition.x, tilePosition.y-1];
+            var topTile = puzzle[tilePosition.x, tilePosition.y+1];
             if (bottomTile.shape == shape && topTile.shape == shape)
             {
                 bottomTile.isMatched = true;

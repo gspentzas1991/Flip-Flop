@@ -280,7 +280,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c7f81454a3789e446896f007e545610e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  tilePrefab: {fileID: 0}
+  cursorPrefab: {fileID: -5926158150403772397, guid: ce4fef730c86e3147b87888e939c0fad, type: 3}
   puzzleWidth: 8
   puzzleHeight: 8
   availableTiles:
