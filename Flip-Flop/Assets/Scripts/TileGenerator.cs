@@ -36,7 +36,7 @@ public class TileGenerator : MonoBehaviour
     /// <summary>
     /// Generates a cursor object in a random position inside the puzzle
     /// </summary>
-    public void GenerateCursorTile()
+    public Tile GenerateCursorTile()
     {
         var puzzle = GameManager.Instance.puzzle;
         //Make a random tile, our cursor
@@ -46,6 +46,7 @@ public class TileGenerator : MonoBehaviour
         puzzle[randomX, randomY] = Instantiate(cursorPrefab, new Vector2(randomX * tilePadding, randomY * tilePadding), cursorPrefab.transform.rotation);
         puzzle[randomX, randomY].tilePosition = new Vector2Int(randomX, randomY);
         puzzle[randomX, randomY].transform.parent = transform;
+        return puzzle[randomX, randomY];
     }
 
     /// <summary>

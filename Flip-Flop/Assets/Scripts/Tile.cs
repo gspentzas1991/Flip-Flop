@@ -16,6 +16,14 @@ public class Tile : MonoBehaviour
     public bool isMatched;
 
 
+    private void Update()
+    {
+        if (isMatched)
+        {
+            gameObject.SetActive(false);
+        }
+    }
+
     /// <summary>
     /// We try to find if the Tile is the central match of tile match
     /// </summary>
