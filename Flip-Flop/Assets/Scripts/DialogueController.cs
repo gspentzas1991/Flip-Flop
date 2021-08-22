@@ -24,8 +24,8 @@ public class DialogueController : MonoBehaviour
         dialogueList.Add(new DialogueItem(Character.Q, 2, "My name is Q and that guy over there is E"));
         dialogueList.Add(new DialogueItem(Character.E, 3, "...sup"));
         dialogueList.Add(new DialogueItem(Character.Q, 4, "Welcome to the Matching Factory! (tm). We're sure you're excited for your first day"));
-        dialogueList.Add(new DialogueItem(Character.Q, 5, "Now I know this looks daunting, but we're be right here to help you out"));
-        dialogueList.Add(new DialogueItem(Character.Q, 6, "You will be controlling that square cursor up there. You can move it up with the W key, or down with the S key"));
+        dialogueList.Add(new DialogueItem(Character.Q, 5, "Now I know this looks daunting, but we'll be right here to help you out. Can you spot a gray ball along with the other shapes?"));
+        dialogueList.Add(new DialogueItem(Character.Q, 6, "That's your cursor. You can move it up with the W key, or down with the S key"));
         dialogueList.Add(new DialogueItem(Character.E, 7, "...sounds pretty limited..."));
         dialogueList.Add(new DialogueItem(Character.Q, 8, "Oh ho ho, but this is where WE come in. Shout at us using the Q and E keys, and we will rotate this whole machine for you"));
         dialogueList.Add(new DialogueItem(Character.Q, 9, "That way you will be able to move any direction you want! Your job is to use that cursor and create as many matches of 3 shapes as you can"));
