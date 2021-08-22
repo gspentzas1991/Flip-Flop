@@ -15,6 +15,10 @@ public class GameManager : MonoBehaviour
     [SerializeField] private Worker QWorker;
     [SerializeField] private Worker EWorker;
     [SerializeField] private GameObject tileExplosion;
+    private AudioSource audioSource;
+    [SerializeField] private AudioClip matchClip;
+    [SerializeField] private AudioClip cursorMoveClip;
+    [SerializeField] private AudioClip explosionClip;
     private Tile cursorTile;
     /// <summary>
     /// How much the score and power meter should increase after destroying a tile
@@ -39,6 +43,7 @@ public class GameManager : MonoBehaviour
         InitializeSingleton();
         puzzle = tileGenerator.GeneratePuzzle();
         cursorTile = tileGenerator.GenerateCursorTile();
+        audioSource = GetComponent<AudioSource>();
     }
 
     /// <summary>
@@ -169,6 +174,8 @@ public class GameManager : MonoBehaviour
         movingTiles.Add(targetTile);
         StartCoroutine(cursorTile.MoveGameObject(targetTile.transform.position));
         StartCoroutine(targetTile.MoveGameObject(cursorTile.transform.position));
+        audioSource.clip = cursorMoveClip;
+        audioSource.Play();
     }
 
     /// <summary>
@@ -272,6 +279,8 @@ public class GameManager : MonoBehaviour
             ReplaceTile(tile);
             IncreaseScore(tileBreakValue);
         }
+        audioSource.clip = explosionClip;
+        audioSource.Play();
         SearchTilesForMatches();
     }
 
@@ -285,6 +294,8 @@ public class GameManager : MonoBehaviour
         puzzle[tile.position.x, tile.position.y].transform.rotation = tile.transform.rotation;
         Destroy(tile.gameObject);
         Instantiate(tileExplosion, tile.transform.position, tileExplosion.transform.rotation);
+        audioSource.clip = matchClip;
+        audioSource.Play();
     }
 
     /// <summary>
