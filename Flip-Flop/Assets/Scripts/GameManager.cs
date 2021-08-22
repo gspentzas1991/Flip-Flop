@@ -2,6 +2,7 @@ using Assets.Scripts;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
@@ -13,6 +14,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] private Text shiftTimerText;
     [SerializeField] private Text shiftTargetText;
     [SerializeField] private Image powerMeterImage;
+    [SerializeField] private GameObject VictoryScreen;
+    [SerializeField] private GameObject LossScreen;
     //References to the workers Q and E
     [SerializeField] private Worker QWorker;
     [SerializeField] private Worker EWorker;
@@ -30,7 +33,14 @@ public class GameManager : MonoBehaviour
     private float powerMeter = 0f;
     private float maxPowerMeter = 100f;
     public bool isInDialogue = true;
-    private bool isGameOver = false;
+    private bool wonGame = false;
+    private bool searchingForMatches = false;
+    private bool runOutOfTime = false;
+    /// <summary>
+    /// The delay after which the manager will search for tile matches again
+    /// </summary>
+    // We use this in order for newly formed matches to appear before they get destroyed
+    private float searchmatchDelay = 0.5f;
 
     //might need refactoring
     private float rotationDirection;
@@ -79,7 +89,25 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        if (score >= shiftTargets[currentShift])
+        if (wonGame)
+        {
+            //return to main menu
+            if(Input.GetKeyDown(KeyCode.Space))
+            {
+                SceneManager.LoadScene(0);
+            }
+        }
+        if (runOutOfTime)
+        {
+            //return to main menu
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                runOutOfTime = false;
+                LossScreen.SetActive(false);
+                RestartShift();
+            }
+        }
+        if (score >= shiftTargets[currentShift] && !searchingForMatches)
         {
             StartNextShift();
         }
@@ -98,8 +126,8 @@ public class GameManager : MonoBehaviour
         //If we're not rotating, we're expecting an input
         if (!isRotating)
         {
-            //we don't allow input if tiles are moving or we're in dialogue
-            if (tilesAreMoving || isInDialogue || isGameOver)
+            //we don't allow input in the following conditions
+            if (tilesAreMoving || isInDialogue || wonGame || searchingForMatches || runOutOfTime)
             {
                 return;
             }
@@ -234,16 +262,17 @@ public class GameManager : MonoBehaviour
         if (movingTiles.Count == 0)
         {
             tilesAreMoving = false;
-            SearchTilesForMatches();
+            StartCoroutine(SearchTilesForMatches());
         }
     }
 
     /// <summary>
     /// Iterates through the puzzle to find tile matches
     /// </summary>
-    private void SearchTilesForMatches()
+    private IEnumerator SearchTilesForMatches()
     {
         bool generatedNewTiles = false;
+        searchingForMatches = true;
         foreach (var tile in puzzle)
         {
             tile.FindMatch();
@@ -256,13 +285,18 @@ public class GameManager : MonoBehaviour
                 ReplaceTile(tile);
                 generatedNewTiles = true;
                 IncreaseScore(tileBreakValue);
-                IncreasePowerMeter(tileBreakValue);
+                IncreasePowerMeter(tileBreakValue*3);
             }
         }
-        //if new tiles where generated, then search again for matches
+        //if new tiles where generated, then wait for a second and then search again for matches
         if (generatedNewTiles)
         {
-            SearchTilesForMatches();
+            yield return new WaitForSeconds(searchmatchDelay);
+            StartCoroutine(SearchTilesForMatches());
+        }
+        else
+        {
+            searchingForMatches = false;
         }
     }
 
@@ -335,7 +369,7 @@ public class GameManager : MonoBehaviour
         }
         audioSource.clip = explosionClip;
         audioSource.Play();
-        SearchTilesForMatches();
+        StartCoroutine(SearchTilesForMatches());
     }
 
     /// <summary>
@@ -366,7 +400,7 @@ public class GameManager : MonoBehaviour
     /// <returns></returns>
     private IEnumerator DecreaseShiftTimer()
     {
-        if (!isInDialogue && !isGameOver)
+        if (!isInDialogue && !wonGame)
         {
             currentShiftTime--;
             UpdateShiftTimerUI();
@@ -383,14 +417,14 @@ public class GameManager : MonoBehaviour
 
     private void WinTheGame()
     {
-        isGameOver = true;
-        Debug.Log("You won!");
+        wonGame = true;
+        VictoryScreen.SetActive(true);
     }
 
     private void GameOver()
     {
-        isGameOver = true;
-        Debug.Log("You lost!");
+        runOutOfTime = true;
+        LossScreen.SetActive(true);
     }
 
     /// <summary>
@@ -412,5 +446,16 @@ public class GameManager : MonoBehaviour
     private void UpdateShiftTargetUI()
     {
         shiftTargetText.text = $"Shift Taget {shiftTargets[currentShift]}";
+    }
+
+    private void RestartShift()
+    {
+        currentShiftTime = shiftTimeLimits[currentShift];
+        score = 0;
+        powerMeter = 0f;
+        UpdateScoreUI();
+        UpdateShiftTimerUI();
+        UpdateShiftTargetUI();
+        UpdatePowerMeterUI();
     }
 }
