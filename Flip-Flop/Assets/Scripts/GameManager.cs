@@ -10,6 +10,8 @@ public class GameManager : MonoBehaviour
     public Tile[,] puzzle;
     [SerializeField] private TileGenerator tileGenerator;
     [SerializeField] private Text scoreText;
+    [SerializeField] private Text shiftTimerText;
+    [SerializeField] private Text shiftTargetText;
     [SerializeField] private Image powerMeterImage;
     //References to the workers Q and E
     [SerializeField] private Worker QWorker;
@@ -28,6 +30,7 @@ public class GameManager : MonoBehaviour
     private float powerMeter = 0f;
     private float maxPowerMeter = 100f;
     public bool isInDialogue = true;
+    private bool isGameOver = false;
 
     //might need refactoring
     private float rotationDirection;
@@ -39,12 +42,23 @@ public class GameManager : MonoBehaviour
     public bool tilesAreMoving;
     private List<Tile> movingTiles = new List<Tile>();
 
+    //might need refactoring
+    private List<int> shiftTimeLimits = new List<int>() {120, 100, 100, 60 };
+    private int currentShiftTime;
+    private List<int> shiftTargets = new List<int>() { 50, 60, 70, 100};
+    public int currentShift = 0;
+
     void Start()
     {
         InitializeSingleton();
         puzzle = tileGenerator.GeneratePuzzle();
         cursorTile = tileGenerator.GenerateCursorTile();
         audioSource = GetComponent<AudioSource>();
+        currentShiftTime = shiftTimeLimits[0];
+        UpdateShiftTargetUI();
+        UpdateShiftTimerUI();
+        UpdateScoreUI();
+        StartCoroutine(DecreaseShiftTimer());
     }
 
     /// <summary>
@@ -65,19 +79,32 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
+        if (score >= shiftTargets[currentShift])
+        {
+            StartNextShift();
+        }
         //Gets the rotation of the puzzle
         var puzzleRotation = tileGenerator.transform.rotation.eulerAngles;
         puzzleRotation.z = Mathf.Round(tileGenerator.transform.rotation.eulerAngles.z);
+        //in the third shift, E will be missing
+        if (currentShift == 2)
+        {
+            EWorker.gameObject.SetActive(false);
+        }
+        else
+        {
+            EWorker.gameObject.SetActive(true);
+        }
         //If we're not rotating, we're expecting an input
         if (!isRotating)
         {
             //we don't allow input if tiles are moving or we're in dialogue
-            if (tilesAreMoving || isInDialogue)
+            if (tilesAreMoving || isInDialogue || isGameOver)
             {
                 return;
             }
             //PowerMove input
-            if (Input.GetKeyDown(KeyCode.Space)) 
+            if (Input.GetKeyDown(KeyCode.F)) 
             {
                 if (powerMeter == maxPowerMeter)
                 {
@@ -113,7 +140,7 @@ public class GameManager : MonoBehaviour
                 isRotating = true;
                 targetRotation = Quaternion.Euler(tileGenerator.transform.eulerAngles + new Vector3(0, 0, rotationDirection));
             }
-            else if (Input.GetKeyDown(KeyCode.E))
+            else if (Input.GetKeyDown(KeyCode.E) && currentShift != 2)
             {
                 EWorker.StartWorking();
                 rotationDirection = -90;
@@ -240,15 +267,41 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Increases the score fo
+    /// Increases the score UI
     /// </summary>
     private void IncreaseScore(float increaseValue)
     {
         score += increaseValue;
-        scoreText.text = $"Score : {score}";
-        UpdatePowerMeter();
+        UpdateScoreUI();
+        UpdatePowerMeterUI();
     }
 
+    /// <summary>
+    /// Increases the currentShift, and puts us back in dialogueMode
+    /// </summary>
+    private void StartNextShift()
+    {
+        if (currentShift>=shiftTargets.Count-1)
+        {
+            WinTheGame();
+        }
+        else
+        {
+            currentShift++;
+            currentShiftTime = shiftTimeLimits[currentShift];
+            score = 0;
+            powerMeter = 0f;
+            UpdateScoreUI();
+            UpdateShiftTimerUI();
+            UpdateShiftTargetUI();
+            UpdatePowerMeterUI();
+            isInDialogue = true;
+        }
+    }
+
+    /// <summary>
+    /// Increases the power meter UI
+    /// </summary>
     private void IncreasePowerMeter(float increaseValue)
     {
         powerMeter += increaseValue;
@@ -264,7 +317,7 @@ public class GameManager : MonoBehaviour
     private void UseBombPower()
     {
         powerMeter = 0f;
-        UpdatePowerMeter();
+        UpdatePowerMeterUI();
         List<Tile> tilesToBeBombed = new List<Tile>();
         while (tilesToBeBombed.Count < 5)
         {
@@ -302,8 +355,62 @@ public class GameManager : MonoBehaviour
     /// <summary>
     /// Updates the power meter UI
     /// </summary>
-    private void UpdatePowerMeter()
+    private void UpdatePowerMeterUI()
     {
         powerMeterImage.fillAmount = powerMeter / 100;
+    }
+
+    /// <summary>
+    /// Deceases the shift timer every second, unless we're in dialogue
+    /// </summary>
+    /// <returns></returns>
+    private IEnumerator DecreaseShiftTimer()
+    {
+        if (!isInDialogue && !isGameOver)
+        {
+            currentShiftTime--;
+            UpdateShiftTimerUI();
+        }
+        if (currentShiftTime<=0)
+        {
+            currentShiftTime = 0;
+            UpdateShiftTimerUI();
+            GameOver();
+        }
+        yield return new WaitForSeconds(1);
+        StartCoroutine(DecreaseShiftTimer());
+    }
+
+    private void WinTheGame()
+    {
+        isGameOver = true;
+        Debug.Log("You won!");
+    }
+
+    private void GameOver()
+    {
+        isGameOver = true;
+        Debug.Log("You lost!");
+    }
+
+    /// <summary>
+    /// Increases the score UI
+    /// </summary>
+    private void UpdateShiftTimerUI()
+    {
+        shiftTimerText.text = $"Shift Ends in {currentShiftTime}";
+    }
+
+    /// <summary>
+    /// Increases the score UI
+    /// </summary>
+    private void UpdateScoreUI()
+    {
+        scoreText.text = $"Score {score}";
+    }
+
+    private void UpdateShiftTargetUI()
+    {
+        shiftTargetText.text = $"Shift Taget {shiftTargets[currentShift]}";
     }
 }
