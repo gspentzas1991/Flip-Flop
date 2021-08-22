@@ -15,6 +15,6 @@ public class VolumeController : MonoBehaviour
 
     public void ChangeVolume()
     {
-        AudioListener.volume = volumeSlider.value/10;
+        AudioListener.volume = volumeSlider.value/4;
     }
 }

@@ -27,6 +27,7 @@ public class GameManager : MonoBehaviour
     private float score;
     private float powerMeter = 0f;
     private float maxPowerMeter = 100f;
+    public bool isInDialogue = true;
 
     //might need refactoring
     private float rotationDirection;
@@ -70,8 +71,8 @@ public class GameManager : MonoBehaviour
         //If we're not rotating, we're expecting an input
         if (!isRotating)
         {
-            //we don't allow input if tiles are moving
-            if (tilesAreMoving)
+            //we don't allow input if tiles are moving or we're in dialogue
+            if (tilesAreMoving || isInDialogue)
             {
                 return;
             }
