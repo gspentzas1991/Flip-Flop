@@ -290,7 +290,7 @@ public class GameManager : MonoBehaviour
     /// </summary>
     private void ReplaceTile(Tile tile)
     {
-        puzzle[tile.position.x, tile.position.y] = tileGenerator.GenerateRandomTile(tile.position, true);
+        puzzle[tile.position.x, tile.position.y] = tileGenerator.GenerateRandomTile(tile.position, false);
         puzzle[tile.position.x, tile.position.y].transform.position = tile.transform.position;
         puzzle[tile.position.x, tile.position.y].transform.rotation = tile.transform.rotation;
         Destroy(tile.gameObject);

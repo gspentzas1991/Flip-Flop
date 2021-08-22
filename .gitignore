@@ -36,3 +36,15 @@ sysinfo.txt
 # Builds
 *.apk
 *.unitypackage
+Flip-Flop/Release/index.html
+Flip-Flop/Release/Release.zip
+Flip-Flop/Release/TemplateData/favicon.ico
+Flip-Flop/Release/TemplateData/fullscreen-button.png
+Flip-Flop/Release/TemplateData/progress-bar-empty-dark.png
+Flip-Flop/Release/TemplateData/progress-bar-empty-light.png
+Flip-Flop/Release/TemplateData/progress-bar-full-dark.png
+Flip-Flop/Release/TemplateData/progress-bar-full-light.png
+Flip-Flop/Release/TemplateData/style.css
+Flip-Flop/Release/TemplateData/unity-logo-dark.png
+Flip-Flop/Release/TemplateData/unity-logo-light.png
+Flip-Flop/Release/TemplateData/webgl-logo.png
