@@ -24,4 +24,10 @@ namespace Assets.Scripts
         Left=2,
         Right=3
     }
+
+    public enum Character
+    {
+        Q=0,
+        E=1
+    }
 }
