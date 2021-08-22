@@ -9,10 +9,12 @@ public class Worker : MonoBehaviour
 {
     Animator animator;
     [SerializeField] Animator gearAnimator;
+    private AudioSource audioSource;
 
     void Start()
     {
         animator = GetComponent<Animator>();
+        audioSource = GetComponent<AudioSource>();
     }
 
     /// <summary>
@@ -22,6 +24,7 @@ public class Worker : MonoBehaviour
     {
         animator.SetBool("isWorking",true);
         gearAnimator.SetBool("isSpinning",true);
+        audioSource.Play();
     }
 
     /// <summary>
@@ -31,5 +34,6 @@ public class Worker : MonoBehaviour
     {
         animator.SetBool("isWorking", false);
         gearAnimator.SetBool("isSpinning", false);
+        audioSource.Stop();
     }
 }
