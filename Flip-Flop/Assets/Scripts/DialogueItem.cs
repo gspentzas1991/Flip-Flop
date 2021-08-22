@@ -25,7 +25,7 @@ namespace Assets.Scripts
         {
             Character = _character;
             DialogueStep = _dialogueStep;
-            DialogueText = _dialogueText +"\n\n Press space to continue";
+            DialogueText = _dialogueText;
         }
     }
 }

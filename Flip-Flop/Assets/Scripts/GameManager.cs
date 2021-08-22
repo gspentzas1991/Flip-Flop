@@ -2,6 +2,7 @@ using Assets.Scripts;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
@@ -10,7 +11,11 @@ public class GameManager : MonoBehaviour
     public Tile[,] puzzle;
     [SerializeField] private TileGenerator tileGenerator;
     [SerializeField] private Text scoreText;
+    [SerializeField] private Text shiftTimerText;
+    [SerializeField] private Text shiftTargetText;
     [SerializeField] private Image powerMeterImage;
+    [SerializeField] private GameObject VictoryScreen;
+    [SerializeField] private GameObject LossScreen;
     //References to the workers Q and E
     [SerializeField] private Worker QWorker;
     [SerializeField] private Worker EWorker;
@@ -28,6 +33,14 @@ public class GameManager : MonoBehaviour
     private float powerMeter = 0f;
     private float maxPowerMeter = 100f;
     public bool isInDialogue = true;
+    private bool wonGame = false;
+    private bool searchingForMatches = false;
+    private bool runOutOfTime = false;
+    /// <summary>
+    /// The delay after which the manager will search for tile matches again
+    /// </summary>
+    // We use this in order for newly formed matches to appear before they get destroyed
+    private float searchmatchDelay = 0.5f;
 
     //might need refactoring
     private float rotationDirection;
@@ -39,12 +52,37 @@ public class GameManager : MonoBehaviour
     public bool tilesAreMoving;
     private List<Tile> movingTiles = new List<Tile>();
 
+    //might need refactoring
+    private List<int> shiftTimeLimits = new List<int>() {120, 100, 100, 60 };
+    private int currentShiftTime;
+    private List<int> shiftTargets = new List<int>() { 50, 60, 70, 100};
+    public int currentShift = 0;
+    GameSettingsManager gameSettingsManager;
+
     void Start()
     {
+        gameSettingsManager = GameObject.FindGameObjectWithTag("GameSettings").GetComponent<GameSettingsManager>();
         InitializeSingleton();
         puzzle = tileGenerator.GeneratePuzzle();
         cursorTile = tileGenerator.GenerateCursorTile();
         audioSource = GetComponent<AudioSource>();
+        if (gameSettingsManager.gameMode == GameMode.NormalGame)
+        {
+            currentShiftTime = shiftTimeLimits[0];
+            isInDialogue = true;
+        }
+        else
+        {
+            shiftTargetText.gameObject.SetActive(false);
+            shiftTimerText.gameObject.SetActive(false);
+            isInDialogue = false;
+            currentShiftTime = 100;
+        }
+       
+        UpdateShiftTargetUI();
+        UpdateShiftTimerUI();
+        UpdateScoreUI();
+        StartCoroutine(DecreaseShiftTimer());
     }
 
     /// <summary>
@@ -65,19 +103,50 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
+        if (wonGame)
+        {
+            //return to main menu
+            if(Input.GetKeyDown(KeyCode.Space))
+            {
+                SceneManager.LoadScene(0);
+            }
+        }
+        if (runOutOfTime)
+        {
+            //return to main menu
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                runOutOfTime = false;
+                LossScreen.SetActive(false);
+                RestartShift();
+            }
+        }
+        if (score >= shiftTargets[currentShift] && !searchingForMatches)
+        {
+            StartNextShift();
+        }
         //Gets the rotation of the puzzle
         var puzzleRotation = tileGenerator.transform.rotation.eulerAngles;
         puzzleRotation.z = Mathf.Round(tileGenerator.transform.rotation.eulerAngles.z);
+        //in the third shift, E will be missing
+        if (currentShift == 2)
+        {
+            EWorker.gameObject.SetActive(false);
+        }
+        else
+        {
+            EWorker.gameObject.SetActive(true);
+        }
         //If we're not rotating, we're expecting an input
         if (!isRotating)
         {
-            //we don't allow input if tiles are moving or we're in dialogue
-            if (tilesAreMoving || isInDialogue)
+            //we don't allow input in the following conditions
+            if (tilesAreMoving || isInDialogue || wonGame || searchingForMatches || runOutOfTime)
             {
                 return;
             }
             //PowerMove input
-            if (Input.GetKeyDown(KeyCode.Space)) 
+            if (Input.GetKeyDown(KeyCode.F)) 
             {
                 if (powerMeter == maxPowerMeter)
                 {
@@ -113,7 +182,7 @@ public class GameManager : MonoBehaviour
                 isRotating = true;
                 targetRotation = Quaternion.Euler(tileGenerator.transform.eulerAngles + new Vector3(0, 0, rotationDirection));
             }
-            else if (Input.GetKeyDown(KeyCode.E))
+            else if (Input.GetKeyDown(KeyCode.E) && currentShift != 2)
             {
                 EWorker.StartWorking();
                 rotationDirection = -90;
@@ -207,16 +276,17 @@ public class GameManager : MonoBehaviour
         if (movingTiles.Count == 0)
         {
             tilesAreMoving = false;
-            SearchTilesForMatches();
+            StartCoroutine(SearchTilesForMatches());
         }
     }
 
     /// <summary>
     /// Iterates through the puzzle to find tile matches
     /// </summary>
-    private void SearchTilesForMatches()
+    private IEnumerator SearchTilesForMatches()
     {
         bool generatedNewTiles = false;
+        searchingForMatches = true;
         foreach (var tile in puzzle)
         {
             tile.FindMatch();
@@ -229,26 +299,62 @@ public class GameManager : MonoBehaviour
                 ReplaceTile(tile);
                 generatedNewTiles = true;
                 IncreaseScore(tileBreakValue);
-                IncreasePowerMeter(tileBreakValue);
+                IncreasePowerMeter(tileBreakValue*3);
             }
         }
-        //if new tiles where generated, then search again for matches
+        //if new tiles where generated, then wait for a second and then search again for matches
         if (generatedNewTiles)
         {
-            SearchTilesForMatches();
+            yield return new WaitForSeconds(searchmatchDelay);
+            StartCoroutine(SearchTilesForMatches());
+        }
+        else
+        {
+            searchingForMatches = false;
         }
     }
 
     /// <summary>
-    /// Increases the score fo
+    /// Increases the score UI
     /// </summary>
     private void IncreaseScore(float increaseValue)
     {
         score += increaseValue;
-        scoreText.text = $"Score : {score}";
-        UpdatePowerMeter();
+        UpdateScoreUI();
+        UpdatePowerMeterUI();
     }
 
+    /// <summary>
+    /// Increases the currentShift, and puts us back in dialogueMode
+    /// </summary>
+    private void StartNextShift()
+    {
+        //We don't start new shifts in the freeplay mode
+        if (gameSettingsManager.gameMode == GameMode.FreePlay)
+        {
+            return;
+        }
+        if (currentShift>=shiftTargets.Count-1)
+        {
+            WinTheGame();
+        }
+        else
+        {
+            currentShift++;
+            currentShiftTime = shiftTimeLimits[currentShift];
+            score = 0;
+            powerMeter = 0f;
+            UpdateScoreUI();
+            UpdateShiftTimerUI();
+            UpdateShiftTargetUI();
+            UpdatePowerMeterUI();
+            isInDialogue = true;
+        }
+    }
+
+    /// <summary>
+    /// Increases the power meter UI
+    /// </summary>
     private void IncreasePowerMeter(float increaseValue)
     {
         powerMeter += increaseValue;
@@ -264,7 +370,7 @@ public class GameManager : MonoBehaviour
     private void UseBombPower()
     {
         powerMeter = 0f;
-        UpdatePowerMeter();
+        UpdatePowerMeterUI();
         List<Tile> tilesToBeBombed = new List<Tile>();
         while (tilesToBeBombed.Count < 5)
         {
@@ -282,7 +388,7 @@ public class GameManager : MonoBehaviour
         }
         audioSource.clip = explosionClip;
         audioSource.Play();
-        SearchTilesForMatches();
+        StartCoroutine(SearchTilesForMatches());
     }
 
     /// <summary>
@@ -290,7 +396,7 @@ public class GameManager : MonoBehaviour
     /// </summary>
     private void ReplaceTile(Tile tile)
     {
-        puzzle[tile.position.x, tile.position.y] = tileGenerator.GenerateRandomTile(tile.position, false);
+        puzzle[tile.position.x, tile.position.y] = tileGenerator.GenerateRandomTile(tile.position, true);
         puzzle[tile.position.x, tile.position.y].transform.position = tile.transform.position;
         puzzle[tile.position.x, tile.position.y].transform.rotation = tile.transform.rotation;
         Destroy(tile.gameObject);
@@ -302,8 +408,74 @@ public class GameManager : MonoBehaviour
     /// <summary>
     /// Updates the power meter UI
     /// </summary>
-    private void UpdatePowerMeter()
+    private void UpdatePowerMeterUI()
     {
         powerMeterImage.fillAmount = powerMeter / 100;
+    }
+
+    /// <summary>
+    /// Deceases the shift timer every second, unless we're in dialogue
+    /// </summary>
+    /// <returns></returns>
+    private IEnumerator DecreaseShiftTimer()
+    {
+        if (!isInDialogue && !wonGame && gameSettingsManager.gameMode != GameMode.FreePlay)
+        {
+            currentShiftTime--;
+            UpdateShiftTimerUI();
+        }
+        //we only lose the game in the normal game mode
+        if (currentShiftTime<=0)
+        {
+            currentShiftTime = 0;
+            UpdateShiftTimerUI();
+            GameOver();
+        }
+        yield return new WaitForSeconds(1);
+        StartCoroutine(DecreaseShiftTimer());
+    }
+
+    private void WinTheGame()
+    {
+        wonGame = true;
+        VictoryScreen.SetActive(true);
+    }
+
+    private void GameOver()
+    {
+        runOutOfTime = true;
+        LossScreen.SetActive(true);
+    }
+
+    /// <summary>
+    /// Increases the score UI
+    /// </summary>
+    private void UpdateShiftTimerUI()
+    {
+        shiftTimerText.text = $"Shift Ends in {currentShiftTime}";
+    }
+
+    /// <summary>
+    /// Increases the score UI
+    /// </summary>
+    private void UpdateScoreUI()
+    {
+        scoreText.text = $"Score {score}";
+    }
+
+    private void UpdateShiftTargetUI()
+    {
+        shiftTargetText.text = $"Shift Taget {shiftTargets[currentShift]}";
+    }
+
+    private void RestartShift()
+    {
+        currentShiftTime = shiftTimeLimits[currentShift];
+        score = 0;
+        powerMeter = 0f;
+        UpdateScoreUI();
+        UpdateShiftTimerUI();
+        UpdateShiftTargetUI();
+        UpdatePowerMeterUI();
     }
 }
