@@ -57,14 +57,28 @@ public class GameManager : MonoBehaviour
     private int currentShiftTime;
     private List<int> shiftTargets = new List<int>() { 50, 60, 70, 100};
     public int currentShift = 0;
+    GameSettingsManager gameSettingsManager;
 
     void Start()
     {
+        gameSettingsManager = GameObject.FindGameObjectWithTag("GameSettings").GetComponent<GameSettingsManager>();
         InitializeSingleton();
         puzzle = tileGenerator.GeneratePuzzle();
         cursorTile = tileGenerator.GenerateCursorTile();
         audioSource = GetComponent<AudioSource>();
-        currentShiftTime = shiftTimeLimits[0];
+        if (gameSettingsManager.gameMode == GameMode.NormalGame)
+        {
+            currentShiftTime = shiftTimeLimits[0];
+            isInDialogue = true;
+        }
+        else
+        {
+            shiftTargetText.gameObject.SetActive(false);
+            shiftTimerText.gameObject.SetActive(false);
+            isInDialogue = false;
+            currentShiftTime = 100;
+        }
+       
         UpdateShiftTargetUI();
         UpdateShiftTimerUI();
         UpdateScoreUI();
@@ -315,6 +329,11 @@ public class GameManager : MonoBehaviour
     /// </summary>
     private void StartNextShift()
     {
+        //We don't start new shifts in the freeplay mode
+        if (gameSettingsManager.gameMode == GameMode.FreePlay)
+        {
+            return;
+        }
         if (currentShift>=shiftTargets.Count-1)
         {
             WinTheGame();
@@ -377,7 +396,7 @@ public class GameManager : MonoBehaviour
     /// </summary>
     private void ReplaceTile(Tile tile)
     {
-        puzzle[tile.position.x, tile.position.y] = tileGenerator.GenerateRandomTile(tile.position, false);
+        puzzle[tile.position.x, tile.position.y] = tileGenerator.GenerateRandomTile(tile.position, true);
         puzzle[tile.position.x, tile.position.y].transform.position = tile.transform.position;
         puzzle[tile.position.x, tile.position.y].transform.rotation = tile.transform.rotation;
         Destroy(tile.gameObject);
@@ -400,11 +419,12 @@ public class GameManager : MonoBehaviour
     /// <returns></returns>
     private IEnumerator DecreaseShiftTimer()
     {
-        if (!isInDialogue && !wonGame)
+        if (!isInDialogue && !wonGame && gameSettingsManager.gameMode != GameMode.FreePlay)
         {
             currentShiftTime--;
             UpdateShiftTimerUI();
         }
+        //we only lose the game in the normal game mode
         if (currentShiftTime<=0)
         {
             currentShiftTime = 0;

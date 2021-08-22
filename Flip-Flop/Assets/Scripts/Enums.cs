@@ -30,4 +30,10 @@ namespace Assets.Scripts
         Q=0,
         E=1
     }
+
+    public enum GameMode
+    {
+        NormalGame = 0,
+        FreePlay = 1
+    }
 }

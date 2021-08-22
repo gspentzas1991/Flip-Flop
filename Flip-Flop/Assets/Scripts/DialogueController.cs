@@ -38,7 +38,7 @@ public class DialogueController : MonoBehaviour
         firstShiftDialogue.Add(new DialogueItem(Character.Q, 13, "When this circle turns yellow, you can press the F key to make 5 random shapes EXPLODE!"));
         firstShiftDialogue.Add(new DialogueItem(Character.E, 14, "...we should start wearing helmets"));
         firstShiftDialogue.Add(new DialogueItem(Character.Q, 15, "Good luck buddy! Me and E will be right here when you call us. Now let's match some shapes!"));
-        DisplayDialogue(firstShiftDialogue[0]);
+
         secondShiftDialogue.Add(new DialogueItem(Character.Q, 1, "Great job pal, you're a natural at this!"));
         secondShiftDialogue.Add(new DialogueItem(Character.Q, 2, "Now things are going to get a bit tougher on this second shift"));
         secondShiftDialogue.Add(new DialogueItem(Character.Q, 3, "The boss wants us to hit higher targets in less time"));
