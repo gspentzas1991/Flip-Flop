@@ -13,9 +13,12 @@ public class GameManager : MonoBehaviour
     [SerializeField] private Text scoreText;
     [SerializeField] private Text shiftTimerText;
     [SerializeField] private Text shiftTargetText;
+    [SerializeField] private Text highscoreText;
     [SerializeField] private Image powerMeterImage;
-    [SerializeField] private GameObject VictoryScreen;
-    [SerializeField] private GameObject LossScreen;
+    [SerializeField] private GameObject victoryScreen;
+    [SerializeField] private GameObject normalLossScreen;
+    [SerializeField] private GameObject freeplayLossScreen;
+    [SerializeField] private Text freeplayLossScreenText;
     //References to the workers Q and E
     [SerializeField] private Worker QWorker;
     [SerializeField] private Worker EWorker;
@@ -46,7 +49,7 @@ public class GameManager : MonoBehaviour
     private float rotationDirection;
     private bool isRotating;
     private Quaternion targetRotation;
-    private float rotationSpeed = 1f;
+    private float rotationSpeed = 2f;
 
     //need refactoring
     public bool tilesAreMoving;
@@ -56,11 +59,32 @@ public class GameManager : MonoBehaviour
     private List<int> shiftTimeLimits = new List<int>() {120, 100, 100, 60 };
     private int currentShiftTime;
     private List<int> shiftTargets = new List<int>() { 50, 60, 70, 100};
+    private int freePlayStartingTimer = 60;
     public int currentShift = 0;
     GameSettingsManager gameSettingsManager;
+    //The ui screen that appears on loss
+    private GameObject LossScreen;
+
+    private float highScore;
+
+    //definately refactor
+    private bool turnRight;
+    private bool turnLeft;
+
+    private Gyroscope gyro;
+    //The amount of gyro movement we need to register a turn
+    private float gyroThreshold = 1f;
+    //Holds the gyro value of the previous frame
+    private float previousGyroValue;
 
     void Start()
     {
+        gyro = Input.gyro;
+        if (gyro.enabled == false)
+        {
+            gyro.enabled = true;
+        }
+        previousGyroValue = gyro.rotationRateUnbiased.z;
         gameSettingsManager = GameObject.FindGameObjectWithTag("GameSettings").GetComponent<GameSettingsManager>();
         InitializeSingleton();
         puzzle = tileGenerator.GeneratePuzzle();
@@ -70,13 +94,17 @@ public class GameManager : MonoBehaviour
         {
             currentShiftTime = shiftTimeLimits[0];
             isInDialogue = true;
+            LossScreen = normalLossScreen;
         }
-        else
+        else if (gameSettingsManager.gameMode == GameMode.FreePlay)
         {
+            highScore = DataManager.GetHighScore();
             shiftTargetText.gameObject.SetActive(false);
-            shiftTimerText.gameObject.SetActive(false);
+            highscoreText.gameObject.SetActive(true);
+            UpdateHighscoreUI();
+            LossScreen = freeplayLossScreen;
             isInDialogue = false;
-            currentShiftTime = 100;
+            currentShiftTime = freePlayStartingTimer;
         }
        
         UpdateShiftTargetUI();
@@ -103,6 +131,18 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
+
+        //Every frame we see if there was a rotation, based on the gyro rotation value of the previous frame
+        if (gyro.rotationRateUnbiased.z > previousGyroValue + gyroThreshold)
+        {
+            turnRight = true;
+        }
+        else if (gyro.rotationRateUnbiased.z < previousGyroValue - gyroThreshold)
+        {
+            turnLeft = true;
+        }
+        previousGyroValue = gyro.rotationRateUnbiased.z;
+
         if (wonGame)
         {
             //return to main menu
@@ -145,6 +185,7 @@ public class GameManager : MonoBehaviour
             {
                 return;
             }
+
             //PowerMove input
             if (Input.GetKeyDown(KeyCode.F)) 
             {
@@ -153,7 +194,7 @@ public class GameManager : MonoBehaviour
                     UseBombPower();
                 }
             }
-            else if (Input.GetKeyDown(KeyCode.W))
+            else if (Input.GetKeyDown(KeyCode.W) || SwipeDetection.swipedUp)
             {
                 var targetTilePosition = DirectionCalculator.Calculate(cursorTile.position, Direction.Up, puzzleRotation.z);
                 //if the movement would 
@@ -164,7 +205,7 @@ public class GameManager : MonoBehaviour
                 var targetTile = puzzle[targetTilePosition.x, targetTilePosition.y];
                 MoveCursor(targetTile);
             }
-            else if (Input.GetKeyDown(KeyCode.S))
+            else if (Input.GetKeyDown(KeyCode.S) || SwipeDetection.swipedDown)
             {
                 var targetTilePosition = DirectionCalculator.Calculate(cursorTile.position, Direction.Down, puzzleRotation.z);
                 if (!IsPositionWithinPuzzle(targetTilePosition))
@@ -175,18 +216,20 @@ public class GameManager : MonoBehaviour
                 MoveCursor(targetTile);
             }
             //Gets the rotation target based on input
-            else if (Input.GetKeyDown(KeyCode.Q))
+            else if (Input.GetKeyDown(KeyCode.Q)  || turnLeft)
             {
                 QWorker.StartWorking();
                 rotationDirection = 90;
                 isRotating = true;
+                turnLeft = false;
                 targetRotation = Quaternion.Euler(tileGenerator.transform.eulerAngles + new Vector3(0, 0, rotationDirection));
             }
-            else if (Input.GetKeyDown(KeyCode.E) && currentShift != 2)
+            else if (Input.GetKeyDown(KeyCode.E) && currentShift != 2 || turnRight)
             {
                 EWorker.StartWorking();
                 rotationDirection = -90;
                 isRotating = true;
+                turnRight = false;
                 targetRotation = Quaternion.Euler(tileGenerator.transform.eulerAngles + new Vector3(0, 0, rotationDirection));
             }
         }
@@ -199,6 +242,8 @@ public class GameManager : MonoBehaviour
             if (Mathf.Abs(angle) < 1)
             {
                 isRotating = false;
+                turnLeft = false;
+                turnRight = false;
                 if (rotationDirection == 90)
                 {
                     QWorker.StopWorking();
@@ -419,7 +464,7 @@ public class GameManager : MonoBehaviour
     /// <returns></returns>
     private IEnumerator DecreaseShiftTimer()
     {
-        if (!isInDialogue && !wonGame && gameSettingsManager.gameMode != GameMode.FreePlay)
+        if (!isInDialogue && !wonGame)
         {
             currentShiftTime--;
             UpdateShiftTimerUI();
@@ -438,12 +483,22 @@ public class GameManager : MonoBehaviour
     private void WinTheGame()
     {
         wonGame = true;
-        VictoryScreen.SetActive(true);
+        victoryScreen.SetActive(true);
     }
 
     private void GameOver()
     {
         runOutOfTime = true;
+        if (gameSettingsManager.gameMode == GameMode.FreePlay)
+        {
+            UpdateLossScreenText();
+            if (score > highScore)
+            {
+                highScore = score;
+                DataManager.SetHighScore(highScore);
+                UpdateHighscoreUI();
+            }
+        }
         LossScreen.SetActive(true);
     }
 
@@ -456,11 +511,27 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Increases the score UI
+    /// Updates the score on the loss screen text
+    /// </summary>
+    private void UpdateLossScreenText()
+    {
+        freeplayLossScreenText.text = $"You run out of time\nYour score was: {score}!\nPress space to try again!";
+    }
+
+    /// <summary>
+    /// Updates the score UI
     /// </summary>
     private void UpdateScoreUI()
     {
         scoreText.text = $"Score {score}";
+    }
+
+    /// <summary>
+    /// Updates the highscore UI
+    /// </summary>
+    private void UpdateHighscoreUI()
+    {
+        highscoreText.text = $"Highscore {highScore}";
     }
 
     private void UpdateShiftTargetUI()
@@ -468,11 +539,35 @@ public class GameManager : MonoBehaviour
         shiftTargetText.text = $"Shift Taget {shiftTargets[currentShift]}";
     }
 
+    /// <summary>
+    /// Is called from a TouchInputDetector when it detects a touch.
+    /// </summary>
+    /// <param name="name">The name of the detector gameobject</param>
+    public void TouchInputDetection(string name)
+    {
+        if (name == "Q")
+        {
+            turnLeft = true;
+        }
+        else if (name == "E")
+        {
+            turnRight = true;
+        }
+    }
+
     private void RestartShift()
     {
-        currentShiftTime = shiftTimeLimits[currentShift];
+        if (gameSettingsManager.gameMode == GameMode.NormalGame)
+        {
+            currentShiftTime = shiftTimeLimits[currentShift];
+        }
+        else if (gameSettingsManager.gameMode == GameMode.FreePlay)
+        {
+            currentShiftTime = freePlayStartingTimer;
+        }
         score = 0;
         powerMeter = 0f;
+        tileGenerator.transform.rotation = transform.rotation;
         UpdateScoreUI();
         UpdateShiftTimerUI();
         UpdateShiftTargetUI();
