@@ -491,6 +491,64 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 290772828}
   m_CullTransparentMesh: 1
+--- !u!1 &379064824
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 379064826}
+  - component: {fileID: 379064825}
+  - component: {fileID: 379064827}
+  m_Layer: 0
+  m_Name: BombPowerTouchDetection
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!65 &379064825
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 379064824}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 6.36, y: 3.16, z: 1}
+  m_Center: {x: -0.65, y: -0.14, z: 0}
+--- !u!4 &379064826
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 379064824}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -10, y: 11.6, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 9
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &379064827
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 379064824}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c94b0483502b67409041c87c3af13dd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameManager: {fileID: 406313273}
 --- !u!1 &406313272
 GameObject:
   m_ObjectHideFlags: 0
@@ -539,6 +597,10 @@ MonoBehaviour:
   matchClip: {fileID: 8300000, guid: 9886de4545ea75548906c567b02b64ec, type: 3}
   cursorMoveClip: {fileID: 8300000, guid: c2872144ad301ae4bb4529f7cd921bf6, type: 3}
   explosionClip: {fileID: 8300000, guid: 1ed9676572740e94484a67a93c6f352c, type: 3}
+  QContinueDialogueText: {fileID: 452688602}
+  EContinueDialogueText: {fileID: 81964354}
+  VictoryContinueText: {fileID: 1067402216}
+  LossContinueText: {fileID: 1356315430}
   isInDialogue: 1
   tilesAreMoving: 0
   currentShift: 0
@@ -1611,7 +1673,7 @@ BoxCollider:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 708274971}
   m_Material: {fileID: 0}
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_Enabled: 1
   serializedVersion: 2
   m_Size: {x: 3.78, y: 3.87, z: 0.2}
@@ -2736,7 +2798,7 @@ BoxCollider:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1414134112}
   m_Material: {fileID: 0}
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_Enabled: 1
   serializedVersion: 2
   m_Size: {x: 3.78, y: 3.87, z: 0.2}

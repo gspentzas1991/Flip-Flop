@@ -27,6 +27,11 @@ public class GameManager : MonoBehaviour
     [SerializeField] private AudioClip matchClip;
     [SerializeField] private AudioClip cursorMoveClip;
     [SerializeField] private AudioClip explosionClip;
+    //Dear god refactor
+    [SerializeField] private Text QContinueDialogueText;
+    [SerializeField] private Text EContinueDialogueText;
+    [SerializeField] private Text VictoryContinueText;
+    [SerializeField] private Text LossContinueText;
     private Tile cursorTile;
     /// <summary>
     /// How much the score and power meter should increase after destroying a tile
@@ -73,18 +78,34 @@ public class GameManager : MonoBehaviour
 
     private Gyroscope gyro;
     //The amount of gyro movement we need to register a turn
-    private float gyroThreshold = 1f;
+    private float gyroThreshold = 3f;
     //Holds the gyro value of the previous frame
     private float previousGyroValue;
 
     void Start()
     {
+        #if UNITY_ANDROID
+            QContinueDialogueText.text = "Tap To Continue";
+            EContinueDialogueText.text = "Tap To Continue";
+            VictoryContinueText.text = "Tap to return to the main menu";
+            LossContinueText.text = "You run out of time\nTap to try again";
+        #else
+            QContinueDialogueText.text = "Press Space To Continue";
+            EContinueDialogueText.text = "Press Space To Continue";
+            VictoryContinueText.text = "Press space to return to the main menu";
+            LossContinueText.text = "You run out of time\Press space to try again";
+        #endif
+        //try to set the fps to 60
+        Application.targetFrameRate = 60;
+
         gyro = Input.gyro;
         if (gyro.enabled == false)
         {
             gyro.enabled = true;
         }
         previousGyroValue = gyro.rotationRateUnbiased.z;
+
+
         gameSettingsManager = GameObject.FindGameObjectWithTag("GameSettings").GetComponent<GameSettingsManager>();
         InitializeSingleton();
         puzzle = tileGenerator.GeneratePuzzle();
@@ -133,20 +154,20 @@ public class GameManager : MonoBehaviour
     {
 
         //Every frame we see if there was a rotation, based on the gyro rotation value of the previous frame
-        if (gyro.rotationRateUnbiased.z > previousGyroValue + gyroThreshold)
-        {
-            turnRight = true;
-        }
-        else if (gyro.rotationRateUnbiased.z < previousGyroValue - gyroThreshold)
+        if (gyro.rotationRateUnbiased.z >  gyroThreshold)
         {
             turnLeft = true;
         }
-        previousGyroValue = gyro.rotationRateUnbiased.z;
+        else if (gyro.rotationRateUnbiased.z < - gyroThreshold)
+        {
+            turnRight = true;
+        }
+        //previousGyroValue = gyro.rotationRateUnbiased.z;
 
         if (wonGame)
         {
             //return to main menu
-            if(Input.GetKeyDown(KeyCode.Space))
+            if(Input.GetKeyDown(KeyCode.Space) || Input.touchCount > 0)
             {
                 SceneManager.LoadScene(0);
             }
@@ -154,7 +175,7 @@ public class GameManager : MonoBehaviour
         if (runOutOfTime)
         {
             //return to main menu
-            if (Input.GetKeyDown(KeyCode.Space))
+            if (Input.GetKeyDown(KeyCode.Space) || Input.touchCount > 0)
             {
                 runOutOfTime = false;
                 LossScreen.SetActive(false);
@@ -219,7 +240,7 @@ public class GameManager : MonoBehaviour
             else if (Input.GetKeyDown(KeyCode.Q)  || turnLeft)
             {
                 QWorker.StartWorking();
-                rotationDirection = 90;
+                rotationDirection = -90;
                 isRotating = true;
                 turnLeft = false;
                 targetRotation = Quaternion.Euler(tileGenerator.transform.eulerAngles + new Vector3(0, 0, rotationDirection));
@@ -227,7 +248,7 @@ public class GameManager : MonoBehaviour
             else if (Input.GetKeyDown(KeyCode.E) && currentShift != 2 || turnRight)
             {
                 EWorker.StartWorking();
-                rotationDirection = -90;
+                rotationDirection = 90;
                 isRotating = true;
                 turnRight = false;
                 targetRotation = Quaternion.Euler(tileGenerator.transform.eulerAngles + new Vector3(0, 0, rotationDirection));
@@ -239,16 +260,16 @@ public class GameManager : MonoBehaviour
             float angle = Quaternion.Angle(tileGenerator.transform.rotation, targetRotation);
 
             //Checks to see if the target rotation has been reached, and stops the rotation if so
-            if (Mathf.Abs(angle) < 1)
+            if (Mathf.Abs(angle) < 2)
             {
                 isRotating = false;
                 turnLeft = false;
                 turnRight = false;
-                if (rotationDirection == 90)
+                if (rotationDirection == -90)
                 {
                     QWorker.StopWorking();
                 }
-                else if (rotationDirection == -90)
+                else if (rotationDirection == 90)
                 {
                     EWorker.StopWorking();
                 }
@@ -345,6 +366,11 @@ public class GameManager : MonoBehaviour
                 generatedNewTiles = true;
                 IncreaseScore(tileBreakValue);
                 IncreasePowerMeter(tileBreakValue*3);
+                if (gameSettingsManager.gameMode == GameMode.FreePlay)
+                {
+                    currentShiftTime += 1;
+                    UpdateShiftTimerUI();
+                }
             }
         }
         //if new tiles where generated, then wait for a second and then search again for matches
@@ -431,6 +457,12 @@ public class GameManager : MonoBehaviour
             ReplaceTile(tile);
             IncreaseScore(tileBreakValue);
         }
+        //in free mode, when a bomb is used, we give 3 seconds back (instead of one second per tile)
+        if (gameSettingsManager.gameMode == GameMode.FreePlay)
+        {
+            currentShiftTime += 3;
+            UpdateShiftTimerUI();
+        }
         audioSource.clip = explosionClip;
         audioSource.Play();
         StartCoroutine(SearchTilesForMatches());
@@ -515,7 +547,11 @@ public class GameManager : MonoBehaviour
     /// </summary>
     private void UpdateLossScreenText()
     {
-        freeplayLossScreenText.text = $"You run out of time\nYour score was: {score}!\nPress space to try again!";
+        #if UNITY_ANDROID
+            freeplayLossScreenText.text = $"You run out of time\nYour score was: {score}!\nTap to try again!";
+        #else
+            freeplayLossScreenText.text = $"You run out of time\nYour score was: {score}!\nPress space to try again!";
+        #endif
     }
 
     /// <summary>
@@ -552,6 +588,13 @@ public class GameManager : MonoBehaviour
         else if (name == "E")
         {
             turnRight = true;
+        }
+        else if (name == "BombPowerTouchDetection")
+        {
+            if (powerMeter == maxPowerMeter)
+            {
+                UseBombPower();
+            }
         }
     }
 

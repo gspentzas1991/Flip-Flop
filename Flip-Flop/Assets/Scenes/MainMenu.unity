@@ -526,7 +526,7 @@ GameObject:
   - component: {fileID: 871815119}
   - component: {fileID: 871815118}
   m_Layer: 5
-  m_Name: StartGameText
+  m_Name: TutorialText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -584,7 +584,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Start Game
+  m_Text: Tutorial
 --- !u!222 &871815119
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1055,7 +1055,7 @@ GameObject:
   - component: {fileID: 1822313812}
   - component: {fileID: 1822313811}
   m_Layer: 5
-  m_Name: StartGameButton
+  m_Name: TutorialButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1736,7 +1736,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Free Play
+  m_Text: Start Game
 --- !u!222 &2133775589
 CanvasRenderer:
   m_ObjectHideFlags: 0
