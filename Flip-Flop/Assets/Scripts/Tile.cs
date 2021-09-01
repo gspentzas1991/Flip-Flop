@@ -15,7 +15,7 @@ public class Tile : MonoBehaviour
     /// </summary>
     public bool isMatched;
     private bool isMoving;
-    private float tileMoveSpeed = 4f;
+    private float tileMoveSpeed = 6f;
     /// <summary>
     /// The ammount of seconds to delay rendering the tile, in order for the tile explosion to finish
     /// </summary>

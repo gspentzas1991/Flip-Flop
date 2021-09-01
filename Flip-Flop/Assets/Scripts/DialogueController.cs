@@ -28,22 +28,34 @@ public class DialogueController : MonoBehaviour
         firstShiftDialogue.Add(new DialogueItem(Character.E, 3, "...sup"));
         firstShiftDialogue.Add(new DialogueItem(Character.Q, 4, "Welcome to the Matching Factory™! We're sure you're excited for your first day"));
         firstShiftDialogue.Add(new DialogueItem(Character.Q, 5, "Now I know this looks daunting, but we'll be right here to help you out. Can you spot a gray ball along with the other shapes?"));
-        firstShiftDialogue.Add(new DialogueItem(Character.Q, 6, "That's your cursor. You can move it up and down using the W and S keys"));
+        #if UNITY_ANDROID
+            firstShiftDialogue.Add(new DialogueItem(Character.Q, 6, "That's your cursor. You can move it by swiping up and down on the screen!"));
+        #else
+            firstShiftDialogue.Add(new DialogueItem(Character.Q, 6, "That's your cursor. You can move it up and down using the W and S keys"));
+        #endif
         firstShiftDialogue.Add(new DialogueItem(Character.E, 7, "...sounds pretty limiting..."));
-        firstShiftDialogue.Add(new DialogueItem(Character.Q, 8, "Oh ho ho, but this is where we come in. Shout at us using the Q and E keys, and we will rotate this whole machine for you!"));
+        #if UNITY_ANDROID
+            firstShiftDialogue.Add(new DialogueItem(Character.Q, 8, "Oh ho ho, but this is where we come in. Shout at us by tapping us on the screen, or by rotating your phone, and we will rotate this whole machine for you!"));
+        #else
+            firstShiftDialogue.Add(new DialogueItem(Character.Q, 8, "Oh ho ho, but this is where we come in. Shout at us using the Q and E keys, and we will rotate this whole machine for you!"));
+        #endif
         firstShiftDialogue.Add(new DialogueItem(Character.Q, 9, "Our job is to match three shapes together. We need to hit our shift target, before the end of our shift."));
         firstShiftDialogue.Add(new DialogueItem(Character.E, 10, "...not sure how the factory is making money..."));
-        firstShiftDialogue.Add(new DialogueItem(Character.Q, 11, "One last thing! As you continue matching shapes, you will fill a special bomb meter. It's that circle in the upper left!"));
-        firstShiftDialogue.Add(new DialogueItem(Character.E, 12, "...wait...there's an actual bomb in here?"));
-        firstShiftDialogue.Add(new DialogueItem(Character.Q, 13, "When this circle turns yellow, you can press the F key to make 5 random shapes EXPLODE!"));
-        firstShiftDialogue.Add(new DialogueItem(Character.E, 14, "...we should start wearing helmets"));
-        firstShiftDialogue.Add(new DialogueItem(Character.Q, 15, "Good luck buddy! Me and E will be right here when you call us. Now let's match some shapes!"));
+        firstShiftDialogue.Add(new DialogueItem(Character.Q, 11, "Good luck buddy! Me and E will be right here when you call us. Now let's match some shapes!"));
 
         secondShiftDialogue.Add(new DialogueItem(Character.Q, 1, "Great job pal, you're a natural at this!"));
         secondShiftDialogue.Add(new DialogueItem(Character.Q, 2, "Now things are going to get a bit tougher on this second shift"));
         secondShiftDialogue.Add(new DialogueItem(Character.Q, 3, "The boss wants us to hit higher targets in less time"));
         secondShiftDialogue.Add(new DialogueItem(Character.E, 4, "...should we start a union?"));
-        secondShiftDialogue.Add(new DialogueItem(Character.Q, 5, "Let's give it our best pal!"));
+        firstShiftDialogue.Add(new DialogueItem(Character.Q, 5, "One last thing! As you continue matching shapes, you will fill a special bomb meter. It's that circle in the upper left!"));
+        firstShiftDialogue.Add(new DialogueItem(Character.E, 6, "...wait...there's an actual bomb in here?"));
+        #if UNITY_ANDROID
+                firstShiftDialogue.Add(new DialogueItem(Character.Q, 7, "When this circle turns yellow, you can tap it to make 5 random shapes EXPLODE!"));
+        #else
+                firstShiftDialogue.Add(new DialogueItem(Character.Q, 7, "When this circle turns yellow, you can press the F key to make 5 random shapes EXPLODE!"));
+        #endif
+        firstShiftDialogue.Add(new DialogueItem(Character.E, 8, "...we should start wearing helmets"));
+        secondShiftDialogue.Add(new DialogueItem(Character.Q, 9, "Let's give it our best pal!"));
 
         thirdShiftDialogue.Add(new DialogueItem(Character.Q, 1, "Good morning mate! Today E took a day off to go to his grandma's wedding"));
         thirdShiftDialogue.Add(new DialogueItem(Character.Q, 2, "So it's just the two of us. We will need to rotate the machine a bit more, but I'm sure we can handle it"));
@@ -83,7 +95,7 @@ public class DialogueController : MonoBehaviour
             {
                 DisplayDialogue(currentDialogue[dialogueStep]);
             }
-            if (Input.GetKeyDown(KeyCode.Space))
+            if (Input.GetKeyDown(KeyCode.Space) || Input.touchCount > 0)
             {
                 dialogueStep++;
                 if (dialogueStep>= currentDialogue.Count)
