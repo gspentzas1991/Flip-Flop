@@ -19,6 +19,10 @@ public class DialogueController : MonoBehaviour
     private List<DialogueItem> thirdShiftDialogue = new List<DialogueItem>();
     private List<DialogueItem> fourthShiftDialogue = new List<DialogueItem>();
 
+    //boolean that holds the info that a touch is held
+    //used to not skip multiple dialogues with a single tap
+    private bool playerIsTapping = true;
+
 
     // Start is called before the first frame update
     void Start()
@@ -47,14 +51,14 @@ public class DialogueController : MonoBehaviour
         secondShiftDialogue.Add(new DialogueItem(Character.Q, 2, "Now things are going to get a bit tougher on this second shift"));
         secondShiftDialogue.Add(new DialogueItem(Character.Q, 3, "The boss wants us to hit higher targets in less time"));
         secondShiftDialogue.Add(new DialogueItem(Character.E, 4, "...should we start a union?"));
-        firstShiftDialogue.Add(new DialogueItem(Character.Q, 5, "One last thing! As you continue matching shapes, you will fill a special bomb meter. It's that circle in the upper left!"));
-        firstShiftDialogue.Add(new DialogueItem(Character.E, 6, "...wait...there's an actual bomb in here?"));
+        secondShiftDialogue.Add(new DialogueItem(Character.Q, 5, "One last thing! As you continue matching shapes, you will fill a special bomb meter. It's that circle in the upper left!"));
+        secondShiftDialogue.Add(new DialogueItem(Character.E, 6, "...wait...there's an actual bomb in here?"));
         #if UNITY_ANDROID
-                firstShiftDialogue.Add(new DialogueItem(Character.Q, 7, "When this circle turns yellow, you can tap it to make 5 random shapes EXPLODE!"));
+                secondShiftDialogue.Add(new DialogueItem(Character.Q, 7, "When this circle turns yellow, you can tap it to make 5 random shapes EXPLODE!"));
         #else
-                firstShiftDialogue.Add(new DialogueItem(Character.Q, 7, "When this circle turns yellow, you can press the F key to make 5 random shapes EXPLODE!"));
+                secondShiftDialogue.Add(new DialogueItem(Character.Q, 7, "When this circle turns yellow, you can press the F key to make 5 random shapes EXPLODE!"));
         #endif
-        firstShiftDialogue.Add(new DialogueItem(Character.E, 8, "...we should start wearing helmets"));
+        secondShiftDialogue.Add(new DialogueItem(Character.E, 8, "...we should start wearing helmets"));
         secondShiftDialogue.Add(new DialogueItem(Character.Q, 9, "Let's give it our best pal!"));
 
         thirdShiftDialogue.Add(new DialogueItem(Character.Q, 1, "Good morning mate! Today E took a day off to go to his grandma's wedding"));
@@ -95,8 +99,27 @@ public class DialogueController : MonoBehaviour
             {
                 DisplayDialogue(currentDialogue[dialogueStep]);
             }
-            if (Input.GetKeyDown(KeyCode.Space) || Input.touchCount > 0)
+
+            //We check if the player is tapping or holding the previous tap, to determine if dialogue should continue
+            if (Input.touchCount == 0)
             {
+                playerIsTapping = false;
+            }
+
+            bool continueDialogue = false;
+            if (Input.touchCount > 0 && !playerIsTapping)
+            {
+                continueDialogue = true;
+                playerIsTapping = true;
+            }
+
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                continueDialogue = true;
+            }
+            if (continueDialogue)
+            {
+                continueDialogue = false;
                 dialogueStep++;
                 if (dialogueStep>= currentDialogue.Count)
                 {

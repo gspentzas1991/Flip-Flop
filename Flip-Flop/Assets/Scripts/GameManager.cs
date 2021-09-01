@@ -32,6 +32,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private Text EContinueDialogueText;
     [SerializeField] private Text VictoryContinueText;
     [SerializeField] private Text LossContinueText;
+    [SerializeField] private GameObject BombIsReadyText;
     private Tile cursorTile;
     /// <summary>
     /// How much the score and power meter should increase after destroying a tile
@@ -111,6 +112,7 @@ public class GameManager : MonoBehaviour
         puzzle = tileGenerator.GeneratePuzzle();
         cursorTile = tileGenerator.GenerateCursorTile();
         audioSource = GetComponent<AudioSource>();
+        BombIsReadyText.SetActive(false);
         if (gameSettingsManager.gameMode == GameMode.NormalGame)
         {
             currentShiftTime = shiftTimeLimits[0];
@@ -152,7 +154,10 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-
+        if (powerMeter == maxPowerMeter && !BombIsReadyText.activeInHierarchy)
+        {
+            BombIsReadyText.SetActive(true);
+        }
         //Every frame we see if there was a rotation, based on the gyro rotation value of the previous frame
         if (gyro.rotationRateUnbiased.z >  gyroThreshold)
         {
@@ -245,7 +250,7 @@ public class GameManager : MonoBehaviour
                 turnLeft = false;
                 targetRotation = Quaternion.Euler(tileGenerator.transform.eulerAngles + new Vector3(0, 0, rotationDirection));
             }
-            else if (Input.GetKeyDown(KeyCode.E) && currentShift != 2 || turnRight)
+            else if ((Input.GetKeyDown(KeyCode.E) || turnRight) && currentShift != 2 )
             {
                 EWorker.StartWorking();
                 rotationDirection = 90;
@@ -260,7 +265,7 @@ public class GameManager : MonoBehaviour
             float angle = Quaternion.Angle(tileGenerator.transform.rotation, targetRotation);
 
             //Checks to see if the target rotation has been reached, and stops the rotation if so
-            if (Mathf.Abs(angle) < 2)
+            if (Mathf.Abs(angle) < 6)
             {
                 isRotating = false;
                 turnLeft = false;
@@ -357,6 +362,7 @@ public class GameManager : MonoBehaviour
         {
             tile.FindMatch();
         }
+        float secondsToAdd = 0f;
         //Destroy all matched tiles and generate new tiles in their positions
         foreach (var tile in puzzle)
         {
@@ -368,10 +374,14 @@ public class GameManager : MonoBehaviour
                 IncreasePowerMeter(tileBreakValue*3);
                 if (gameSettingsManager.gameMode == GameMode.FreePlay)
                 {
-                    currentShiftTime += 1;
-                    UpdateShiftTimerUI();
+                    secondsToAdd += 0.4f;
                 }
             }
+        }
+        if (gameSettingsManager.gameMode == GameMode.FreePlay)
+        {
+            currentShiftTime += Mathf.RoundToInt(secondsToAdd);
+            UpdateShiftTimerUI();
         }
         //if new tiles where generated, then wait for a second and then search again for matches
         if (generatedNewTiles)
@@ -465,7 +475,8 @@ public class GameManager : MonoBehaviour
         }
         audioSource.clip = explosionClip;
         audioSource.Play();
-        StartCoroutine(SearchTilesForMatches());
+        StartCoroutine(SearchTilesForMatches()); 
+        BombIsReadyText.SetActive(false);
     }
 
     /// <summary>
