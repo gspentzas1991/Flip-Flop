@@ -19,6 +19,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject normalLossScreen;
     [SerializeField] private GameObject freeplayLossScreen;
     [SerializeField] private Text freeplayLossScreenText;
+    [SerializeField] private GameObject FreeplayInstructionsScreen;
+    [SerializeField] private Text FreeplayInstructionsText;
     //References to the workers Q and E
     [SerializeField] private Worker QWorker;
     [SerializeField] private Worker EWorker;
@@ -67,6 +69,7 @@ public class GameManager : MonoBehaviour
     private List<int> shiftTargets = new List<int>() { 50, 60, 70, 100};
     private int freePlayStartingTimer = 60;
     public int currentShift = 0;
+
     GameSettingsManager gameSettingsManager;
     //The ui screen that appears on loss
     private GameObject LossScreen;
@@ -76,12 +79,11 @@ public class GameManager : MonoBehaviour
     //definately refactor
     private bool turnRight;
     private bool turnLeft;
+    private bool showingFreeplayInstructions;
 
     private Gyroscope gyro;
     //The amount of gyro movement we need to register a turn
     private float gyroThreshold = 3f;
-    //Holds the gyro value of the previous frame
-    private float previousGyroValue;
 
     void Start()
     {
@@ -90,11 +92,13 @@ public class GameManager : MonoBehaviour
             EContinueDialogueText.text = "Tap To Continue";
             VictoryContinueText.text = "Tap to return to the main menu";
             LossContinueText.text = "You run out of time\nTap to try again";
+            FreeplayInstructionsText.text = "Match 3 shapes to increase your score, and gain time in your shift. \nTry to pass your higscore!\n\n\nTap to continue";
         #else
             QContinueDialogueText.text = "Press Space To Continue";
             EContinueDialogueText.text = "Press Space To Continue";
             VictoryContinueText.text = "Press space to return to the main menu";
             LossContinueText.text = "You run out of time\Press space to try again";
+            FreeplayInstructionsText.text = "Match 3 shapes to increase your score, and gain time in your shift. \nTry to pass your higscore!\n\n\nPress space to continue";
         #endif
         //try to set the fps to 60
         Application.targetFrameRate = 60;
@@ -104,7 +108,6 @@ public class GameManager : MonoBehaviour
         {
             gyro.enabled = true;
         }
-        previousGyroValue = gyro.rotationRateUnbiased.z;
 
 
         gameSettingsManager = GameObject.FindGameObjectWithTag("GameSettings").GetComponent<GameSettingsManager>();
@@ -128,6 +131,8 @@ public class GameManager : MonoBehaviour
             LossScreen = freeplayLossScreen;
             isInDialogue = false;
             currentShiftTime = freePlayStartingTimer;
+            showingFreeplayInstructions = true;
+            FreeplayInstructionsScreen.SetActive(true);
         }
        
         UpdateShiftTargetUI();
@@ -154,9 +159,18 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        if (powerMeter == maxPowerMeter && !BombIsReadyText.activeInHierarchy)
+        if (powerMeter< maxPowerMeter)
+        {
+            BombIsReadyText.SetActive(false);
+        }
+        else if (powerMeter == maxPowerMeter && !BombIsReadyText.activeInHierarchy)
         {
             BombIsReadyText.SetActive(true);
+        }
+        if (showingFreeplayInstructions && (Input.touchCount>0 || Input.GetKeyDown(KeyCode.Space)))
+        {
+            showingFreeplayInstructions = false;
+            FreeplayInstructionsScreen.SetActive(false);
         }
         //Every frame we see if there was a rotation, based on the gyro rotation value of the previous frame
         if (gyro.rotationRateUnbiased.z >  gyroThreshold)
@@ -167,7 +181,6 @@ public class GameManager : MonoBehaviour
         {
             turnRight = true;
         }
-        //previousGyroValue = gyro.rotationRateUnbiased.z;
 
         if (wonGame)
         {
@@ -207,7 +220,7 @@ public class GameManager : MonoBehaviour
         if (!isRotating)
         {
             //we don't allow input in the following conditions
-            if (tilesAreMoving || isInDialogue || wonGame || searchingForMatches || runOutOfTime)
+            if (tilesAreMoving || isInDialogue || wonGame || searchingForMatches || runOutOfTime || showingFreeplayInstructions)
             {
                 return;
             }
@@ -370,8 +383,8 @@ public class GameManager : MonoBehaviour
             {
                 ReplaceTile(tile);
                 generatedNewTiles = true;
+                IncreasePowerMeter(tileBreakValue * 2);
                 IncreaseScore(tileBreakValue);
-                IncreasePowerMeter(tileBreakValue*3);
                 if (gameSettingsManager.gameMode == GameMode.FreePlay)
                 {
                     secondsToAdd += 0.4f;
@@ -476,7 +489,6 @@ public class GameManager : MonoBehaviour
         audioSource.clip = explosionClip;
         audioSource.Play();
         StartCoroutine(SearchTilesForMatches()); 
-        BombIsReadyText.SetActive(false);
     }
 
     /// <summary>
@@ -507,12 +519,11 @@ public class GameManager : MonoBehaviour
     /// <returns></returns>
     private IEnumerator DecreaseShiftTimer()
     {
-        if (!isInDialogue && !wonGame)
+        if (!isInDialogue && !wonGame && !showingFreeplayInstructions)
         {
             currentShiftTime--;
             UpdateShiftTimerUI();
         }
-        //we only lose the game in the normal game mode
         if (currentShiftTime<=0)
         {
             currentShiftTime = 0;
